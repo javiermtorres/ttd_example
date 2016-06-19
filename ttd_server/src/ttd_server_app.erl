@@ -3,7 +3,7 @@
 %% @end
 %%%-------------------------------------------------------------------
 
--module(ttd_server_app).
+-module('ttd_server_app').
 
 -behaviour(application).
 
@@ -15,7 +15,16 @@
 %%====================================================================
 
 start(_StartType, _StartArgs) ->
-    ttd_server_sup:start_link().
+    Dispatch = cowboy_router:compile(
+                 [{'_',
+                   [{"/", cowboy_static, {priv_file, ttd_server, "index.html"}},
+                    {"/bullet", bullet_handler, [{handler, stream_handler}]},
+                    {"/[...]", cowboy_static, {priv_dir, ttd_server, []}}]}]
+                ),
+        {ok, _} = cowboy:start_http(http, 10,
+                                    [{port, 1234}],
+                                    [{env, [{dispatch, Dispatch}]}]),
+    'ttd_server_sup':start_link().
 
 %%--------------------------------------------------------------------
 stop(_State) ->
